@@ -14,11 +14,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('v1')->group(function () {
-    Route::middleware('auth')->group(function () {
-        Route::apiResource('tasks', \App\Http\Controllers\TaskController::class);
-        Route::post('logout', [\App\Http\Controllers\AuthController::class, 'logout']);
-    });
-    Route::apiResource('users', \App\Http\Controllers\UserController::class);
-    Route::post('login', [\App\Http\Controllers\AuthController::class, 'authenticate']);
+Route::group([
+
+    'middleware' => ['api', 'auth:api'],
+    'prefix' => 'auth'
+
+], function ($router) {
+
+    Route::post('login', [\App\Http\Controllers\AuthController::class, 'login'])->withoutMiddleware(['auth:api']);
+    Route::post('logout', [\App\Http\Controllers\AuthController::class, 'logout']);
+    Route::post('refresh', [\App\Http\Controllers\AuthController::class, 'refresh'])->withoutMiddleware(['auth:api']);
+    Route::get('user', [\App\Http\Controllers\AuthController::class, 'me']);
+
+});
+
+Route::group([
+    'middleware' => ['api', 'auth:api']
+], function () {
+    Route::apiResource('tasks', \App\Http\Controllers\TaskController::class);
+    Route::apiResource('users', \App\Http\Controllers\UserController::class)->withoutMiddleware(['auth:api']);
 });
