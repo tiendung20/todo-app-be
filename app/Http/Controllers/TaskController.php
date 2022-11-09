@@ -4,10 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
+    protected $user;
+
+    public function __construct()
+    {
+        $this->user = Auth::user();
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -15,7 +24,8 @@ class TaskController extends Controller
      */
     public function index()
     {
-        return response()->json(['msg' => 'SUCCESS', 'data' => TaskResource::collection(Task::all()->sortBy('created_at'))]);
+        $tasks = Task::query()->where('user', $this->user['username'])->get()->sortBy('created_at');
+        return response()->json(['msg' => 'SUCCESS', 'data' => TaskResource::collection($tasks)]);
     }
 
     /**
@@ -29,6 +39,7 @@ class TaskController extends Controller
         if ($request->filled(['label', 'done'])) {
             $task = $request->only('label', 'done');
             $task['done'] = filter_var($task['done'], FILTER_VALIDATE_BOOLEAN);
+            $task['user'] = $this->user['username'];
             return response()->json(['msg' => 'SUCCESS', 'data' => new TaskResource(Task::create($task))]);
         }
         return response()->json(['msg' => 'ERROR']);
@@ -42,7 +53,9 @@ class TaskController extends Controller
      */
     public function show($id)
     {
-        return response()->json(['msg' => 'SUCCESS', 'data' => new TaskResource(Task::findOrFail($id))]);
+        $task = Task::findOrFail($id);
+        if ($task['user'] !== $this->user['username']) return response()->json(['msg' => 'ERROR']);
+        return response()->json(['msg' => 'SUCCESS', 'data' => new TaskResource($task)]);
     }
 
     /**
@@ -55,6 +68,7 @@ class TaskController extends Controller
     public function update(Request $request, $id)
     {
         $task = Task::findOrFail($id);
+        if ($task['user'] !== $this->user['username']) return response()->json(['msg' => 'ERROR']);
         $todo = $request->only('label', 'done');
         if ($request->has('done')) {
             $todo['done'] = filter_var($todo['done'], FILTER_VALIDATE_BOOLEAN);;
@@ -72,6 +86,7 @@ class TaskController extends Controller
     public function destroy($id)
     {
         $task = Task::findOrFail($id);
+        if ($task['user'] !== $this->user['username']) return response()->json(['msg' => 'ERROR']);
         $task->delete();
         return response()->json(['msg' => 'SUCCESS', 'data' => new TaskResource($task)]);
     }

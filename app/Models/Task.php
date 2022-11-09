@@ -25,5 +25,6 @@ class Task extends Model
         'id',
         'label',
         'done',
+        'user'
     ];
 }

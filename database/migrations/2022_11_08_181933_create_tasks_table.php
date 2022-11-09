@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->string('label');
             $table->boolean('done');
+            $table->string('user');
         });
     }
 
